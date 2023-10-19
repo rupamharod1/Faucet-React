@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import { ethers } from "ethers";
-import { PRIVATE_KEY, RPC_ENDPOINT } from "./NetworkInfo";
 import { getTimestamp, createTimestamp, updateTimestamp } from './api';
+import { createAndFundWallets } from "./web3";
 
 function App() {
 
@@ -18,8 +17,6 @@ function App() {
 
   const requestFunds = async () => {
     try {
-      const wallet = new ethers.Wallet(PRIVATE_KEY);
-      const provider = new ethers.providers.JsonRpcProvider(RPC_ENDPOINT);
       const timestampData = await getTimestamp(userAddress);
  
       if (timestampData != 0 || (timestampData + 60*60*24) < timeStamp() ) {
@@ -27,33 +24,12 @@ function App() {
         return faucetStatus;
       }
 
-          // Get the current nonce of the account
-      const currentNonce = await provider.getTransactionCount(wallet.address);
-
       const targetAddress = userAddress; // Replace with the recipient's Ethereum address
 
-      const valueToSend = ethers.utils.parseEther('0.1');
-
-
-      // Create a transaction object
-      const transaction = {
-        to: targetAddress,
-        value: valueToSend,
-        gasLimit: 80000,
-        nonce: currentNonce,
-        chainId: 103070,
-      };
-
-      // Sign the transaction with the wallet
-      const signedTransaction = await wallet.signTransaction(transaction);
-
-
-      // Send the transaction
-      const txResponse = await provider.sendTransaction(signedTransaction);
-
-      console.log('Transaction sent:', txResponse);
-      await createTimestamp(userAddress);
+      const response =await  createAndFundWallets(targetAddress)
       setFaucetStatus("Funds sent! Please wait a moment for the transaction to be confirmed.");
+      console.log(response)
+      await createTimestamp(userAddress);
       
     } catch (error) {
       console.error("Error requesting funds:", error.message);
